@@ -110,22 +110,22 @@ include_directories(libs/implot/)
 ###############################################################################
 
 add_library(app
-  common/App.h
-  common/App.cpp
-  common/Shader.h
-  common/Native.h
-  common/Native.cpp
-  common/Image.h
-  common/Fonts/Fonts.h
-  common/Fonts/FontAwesome5.cpp
-  common/Fonts/RobotoRegular.cpp
-  common/Fonts/RobotoBold.cpp
-  common/Fonts/RobotoItalic.cpp
-  common/Fonts/RobotoMonoRegular.cpp
-  common/Fonts/RobotoMonoBold.cpp
-  common/Fonts/RobotoMonoItalic.cpp
+  app/App.h
+  app/App.cpp
+  app/Shader.h
+  app/Native.h
+  app/Native.cpp
+  app/Image.h
+  app/Fonts/Fonts.h
+  app/Fonts/FontAwesome5.cpp
+  app/Fonts/RobotoRegular.cpp
+  app/Fonts/RobotoBold.cpp
+  app/Fonts/RobotoItalic.cpp
+  app/Fonts/RobotoMonoRegular.cpp
+  app/Fonts/RobotoMonoBold.cpp
+  app/Fonts/RobotoMonoItalic.cpp
 )
-target_include_directories(app PUBLIC common)
+target_include_directories(app PUBLIC app)
 target_link_libraries(app implot nfd)
 target_compile_features(app PRIVATE cxx_std_17)
 
@@ -137,7 +137,6 @@ add_executable(tuner
   "src/main.cpp"
   "src/audio.cpp"
   "src/lpf.cpp"
-  "src/autocorrelation.cpp"
   "src/PitchDetector.cpp"
   ${KISS_SRC}
 )

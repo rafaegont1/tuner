@@ -3,7 +3,6 @@
 #include "implot.h"
 #include "audio.hpp"
 #include "PitchDetector.hpp"
-#include "autocorrelation.hpp"
 #include "ETFE.hpp"
 
 // Buffer size and sample rate
