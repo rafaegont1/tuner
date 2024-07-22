@@ -50,27 +50,27 @@ include_directories("include" "libs" "libs/kissfft")
 ###############################################################################
 
 set(IMGUI_HEADERS
-  ../imgui/imconfig.h
-  ../imgui/imgui_internal.h
-  ../imgui/imgui.h
-  ../imgui/imstb_rectpack.h
-  ../imgui/imstb_textedit.h
-  ../imgui/imstb_truetype.h
-  ../imgui/backends/imgui_impl_glfw.h
-  ../imgui/backends/imgui_impl_opengl3.h
-  ../imgui/backends/imgui_impl_opengl3_loader.h
-  ../imgui/misc/cpp/imgui_stdlib.h
+  libs/imgui/imconfig.h
+  libs/imgui/imgui_internal.h
+  libs/imgui/imgui.h
+  libs/imgui/imstb_rectpack.h
+  libs/imgui/imstb_textedit.h
+  libs/imgui/imstb_truetype.h
+  libs/imgui/backends/imgui_impl_glfw.h
+  libs/imgui/backends/imgui_impl_opengl3.h
+  libs/imgui/backends/imgui_impl_opengl3_loader.h
+  libs/imgui/misc/cpp/imgui_stdlib.h
 )
 
 set(IMGUI_SRC
-  ../imgui/imgui_demo.cpp
-  ../imgui/imgui_draw.cpp
-  ../imgui/imgui_tables.cpp
-  ../imgui/imgui_widgets.cpp
-  ../imgui/imgui.cpp
-  ../imgui/backends/imgui_impl_glfw.cpp
-  ../imgui/backends/imgui_impl_opengl3.cpp
-  ../imgui/misc/cpp/imgui_stdlib.cpp
+  libs/imgui/imgui_demo.cpp
+  libs/imgui/imgui_draw.cpp
+  libs/imgui/imgui_tables.cpp
+  libs/imgui/imgui_widgets.cpp
+  libs/imgui/imgui.cpp
+  libs/imgui/backends/imgui_impl_glfw.cpp
+  libs/imgui/backends/imgui_impl_opengl3.cpp
+  libs/imgui/misc/cpp/imgui_stdlib.cpp
 )
 
 find_package(OpenGL REQUIRED)
@@ -80,7 +80,7 @@ add_library(imgui ${IMGUI_HEADERS} ${IMGUI_SRC})
 target_link_libraries(imgui PUBLIC glfw glad OpenGL::GL)
 target_compile_definitions(imgui PRIVATE IMGUI_DLL_EXPORT)
 
-include_directories(../imgui/ ../imgui/backends ../imgui/misc/cpp)
+include_directories(libs/imgui/ libs/imgui/backends libs/imgui/misc/cpp)
 
 # imnodes
 # add_library(imnodes libs/imnodes/imnodes.h libs/imnodes/imnodes_internal.h libs/imnodes/imnodes.cpp)
@@ -92,19 +92,19 @@ include_directories(../imgui/ ../imgui/backends ../imgui/misc/cpp)
 ###############################################################################
 
 set(IMPLOT_HEADERS
-  ../implot/implot.h
-  ../implot/implot_internal.h
+  libs/implot/implot.h
+  libs/implot/implot_internal.h
 )
 
 set(IMPLOT_SRC
-  ../implot/implot.cpp
-  ../implot/implot_items.cpp
-  ../implot/implot_demo.cpp
+  libs/implot/implot.cpp
+  libs/implot/implot_items.cpp
+  libs/implot/implot_demo.cpp
 )
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../implot/backends")
-  list(APPEND IMPLOT_HEADERS ../implot/backends/implot_backend.h ../implot/backends/implot_impl_opengl3.h)
-  list(APPEND IMPLOT_SRC ../implot/backends/implot_backend.h ../implot/backends/implot_impl_opengl3.cpp)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libs/implot/backends")
+  list(APPEND IMPLOT_HEADERS libs/implot/backends/implot_backend.h libs/implot/backends/implot_impl_opengl3.h)
+  list(APPEND IMPLOT_SRC libs/implot/backends/implot_backend.h libs/implot/backends/implot_impl_opengl3.cpp)
 endif()
 
 add_library(implot ${IMPLOT_HEADERS} ${IMPLOT_SRC})
@@ -113,7 +113,7 @@ target_compile_definitions(implot PUBLIC IMPLOT_DEBUG IMPLOT_DLL_EXPORT IMPLOT_B
 set_property(TARGET implot PROPERTY CXX_STANDARD 11)
 target_compile_options(implot PRIVATE -Wall -Wextra -pedantic -Werror -mavx2 -Ofast)
 
-include_directories(../implot/)
+include_directories(libs/implot/)
 
 ###############################################################################
 # APP FRAMEWORK
