@@ -13,16 +13,6 @@ endif()
 # 3RD PARTY LIBS
 ###############################################################################
 
-# FETCH CONTENT LIBS
-# include(FetchContent)
-# set(FETCHCONTENT_FULLY_DISCONNECTED ON)
-
-# FetchContent_Declare(glfw GIT_REPOSITORY https://github.com/glfw/glfw)
-# FetchContent_MakeAvailable(glfw)
-
-# FetchContent_Declare(iir GIT_REPOSITORY https://github.com/berndporr/iir1)
-# FetchContent_MakeAvailable(iir)
-
 # LOCAL LIBS
 
 # GLAD
@@ -146,11 +136,9 @@ target_compile_features(app PRIVATE cxx_std_17)
 add_executable(tuner
   "src/main.cpp"
   "src/audio.cpp"
-  # "src/filter.cpp"
-  # "src/window.cpp"
-  # "src/fft.cpp"
+  "src/lpf.cpp"
   "src/autocorrelation.cpp"
-  "src/notes.cpp"
+  "src/PitchDetector.cpp"
   ${KISS_SRC}
 )
 target_link_libraries(tuner app)

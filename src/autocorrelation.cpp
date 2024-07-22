@@ -1,46 +1,47 @@
 #include "autocorrelation.hpp"
 
-#include <string.h>
-
-Autocorrelation::Autocorrelation(int size, float sample_rate)
-: n(size), sample_rate(sample_rate)
+Autocorrelation::Autocorrelation(int size, float fs)
+: fs(fs)
 {
-  res = new float[n];
+  res.resize(size);
 }
 
-Autocorrelation::~Autocorrelation()
-{
-  delete[] res;
-}
+Autocorrelation::~Autocorrelation() {}
 
-const float *Autocorrelation::apply(const float *input)
+float Autocorrelation::get_frequency(const float *input)
 {
-  memset(res, 0, n * sizeof(float));
+  const int n = res.size();
+  int state = 0;
+  int period = 0;
+  float thresh;
+
+  std::fill(res.begin(), res.end(), 0.0f);
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n - i; j++) {
       res[i] += input[j] * input[j + i];
     }
+
+    switch (state) {
+      case 0:
+        thresh = 0.5f * res[0];
+        state = 1;
+        break;
+      case 1:
+        if ((res[i] > thresh) && (res[i] - res[i-1] > 0)) {
+          state = 2;
+        }
+        break;
+      case 2:
+        if (res[i] - res[i-1] <= 0) {
+          period = i;
+          state = 3;
+        }
+        break;
+    };
+
+    if (state == 3) break;
   }
 
-  return res;
-}
-
-float Autocorrelation::get_freq()
-{
-  float sum = 0.0;
-  float thresh = res[0] * 0.5;
-  int period = 0;
-  int state = 1;
-
-  for (int i = 1; i < n; ++i) {
-    if (state == 1 && res[i] > thresh && res[i] - res[i-1] > 0) {
-      state = 2;
-    } else if (state == 2 && res[i] - res[i-1] <= 0) {
-      period = i;
-      break;
-    }
-  }
-
-  return sample_rate / period;
+  return fs / period;
 }

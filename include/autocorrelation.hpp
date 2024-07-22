@@ -1,18 +1,19 @@
 #ifndef AUTOCORRELATION_HPP
 #define AUTOCORRELATION_HPP
 
-class Autocorrelation {
+#include <vector>
+
+class Autocorrelation
+{
 public:
-  Autocorrelation(int size, float sample_rate);
+  Autocorrelation(int size, float fs);
   virtual ~Autocorrelation();
 
-  const float *apply(const float *x);
-  float get_freq();
+  float get_frequency(const float *input);
 
 private:
-  int n;
-  float sample_rate;
-  float *res;
+  float fs;
+  std::vector<float> res;
 };
 
 #endif // AUTOCORRELATION_HPP

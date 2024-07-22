@@ -2,7 +2,7 @@
 #include "imgui.h"
 #include "implot.h"
 #include "audio.hpp"
-#include "notes.hpp"
+#include "PitchDetector.hpp"
 #include "autocorrelation.hpp"
 #include "ETFE.hpp"
 
@@ -61,7 +61,7 @@ struct ImFilter : public App {
 
         if (filter_need_update) {
             fc = std::clamp(fc, min_fc, max_fc);
-            audio::setup_filter(fc);
+            audio::setup_filter(fs, fc);
         }
 
         const audio::frames_t *frames = audio::get_buffer();
@@ -154,7 +154,7 @@ struct ImFilter : public App {
             ImGui::TableNextColumn();
             ImGui::Text("%.2f", note_res.f);
             ImGui::TableNextColumn();
-            ImGui::Text("%s", note_res.name);
+            ImGui::Text("%d%s", note_res.octave, note_res.note);
             ImGui::TableNextColumn();
             ImGui::Text("%.2f", fft_res.df);
             ImGui::EndTable();
@@ -164,13 +164,13 @@ struct ImFilter : public App {
             ImGui::Text("In tune!");
             ImGui::PopStyleColor();
         } else {
-            if (note_res.cents_sharp > 0) {
+            if (note_res.cents > 0) {
                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255,0,0,255));
-                ImGui::Text("Cents sharp: %.2f", note_res.cents_sharp);
+                ImGui::Text("Cents sharp: %.2f", note_res.cents);
                 ImGui::PopStyleColor();
             } else {
                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255,0,0,255));
-                ImGui::Text("Cents flat: %.2f", -note_res.cents_sharp);
+                ImGui::Text("Cents flat: %.2f", -note_res.cents);
                 ImGui::PopStyleColor();
             }
         }
@@ -183,7 +183,7 @@ struct ImFilter : public App {
             ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.25f);
             ImPlot::PlotShaded("x[f]", fft_res.f.data(), fft_res.ampy.data(), (int)fft_res.f.size(), -INFINITY);
             ImPlot::PlotLine("x[f]", fft_res.f.data(), fft_res.ampy.data(), (int)fft_res.f.size());
-            ImPlot::TagX(fft_res.f[fft_res.pidx], ImVec4(1,1,1,0.9), "%s", note_res.name);
+            ImPlot::TagX(fft_res.f[fft_res.pidx], ImVec4(1,1,1,0.9), "%s", note_res.note);
             if (ImPlot::DragLineX(397391, &fc, ImVec4(.15f, .15f, .15f, 1))) {
                 filter_need_update = true;
             }

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+#include "lpf.hpp"
 // #include "ETFE.hpp"
 // #include "window.hpp"
 
@@ -13,8 +14,7 @@ pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 ma_result result;
 ma_device device;
 ma_device_config dev_conf;
-ma_lpf lpf;
-ma_lpf_config lpf_conf;
+Lpf lpf;
 
 float *buffer;
 audio::frames_t frames;
@@ -67,10 +67,7 @@ void audio::init(ma_uint32 frame_count, ma_uint32 srate, double cutoff)
   result = ma_device_start(&device);
   if (result != MA_SUCCESS) exit_with_error();
 
-  lpf_conf = ma_lpf_config_init(ma_format_f32, 1, srate, cutoff, 2);
-
-  result = ma_lpf_init(&lpf_conf, nullptr, &lpf);
-  if (result != MA_SUCCESS) exit_with_error();
+  lpf.setup(srate, cutoff);
 }
 
 void audio::deinit()
@@ -81,7 +78,6 @@ void audio::deinit()
 
   ma_device_stop(&device);
   ma_device_uninit(&device);
-  ma_lpf_uninit(&lpf, nullptr);
 }
 
 const audio::frames_t *audio::get_buffer()
@@ -92,17 +88,17 @@ const audio::frames_t *audio::get_buffer()
     new_buffer = false;
     pthread_mutex_unlock(&mtx);
 
-    ma_lpf_process_pcm_frames(&lpf, frames.y, frames.x, buffer_size);
+    for (int i = 0; i < buffer_size; i++) {
+      frames.y[i] = lpf.apply(frames.x[i]);
+    }
   }
 
   return &frames;
 }
 
-void audio::setup_filter(double cutoff)
+void audio::setup_filter(double srate, double cutoff)
 {
-  lpf_conf.cutoffFrequency = cutoff;
-  result = ma_lpf_reinit(&lpf_conf, &lpf);
-  if (result != MA_SUCCESS) exit_with_error();
+  lpf.setup(srate, cutoff);
 }
 
 bool audio::is_buffer_new()
