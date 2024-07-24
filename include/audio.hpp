@@ -1,21 +1,31 @@
 #ifndef AUDIO_HPP
 #define AUDIO_HPP
 
+#include <vector>
 #include "miniaudio.h"
+#include "lpf.hpp"
 
-namespace audio {
+class Audio {
+public:
+  struct Result {
+    std::vector<float> raw; // raw audio frames
+    std::vector<float> flt; // low-pass filtered audio frames
+  };
 
-struct frames_t {
-  float *x; // raw audio frames
-  float *y; // low-pass filtered audio frames
+  Audio(ma_uint32 frame_count, ma_uint32 srate, double cutoff);
+  virtual ~Audio();
+
+  void setup_filter(double fs, double fc);
+  const Result *get_buffer();
+
+private:
+  void exit_with_error();
+
+  Lpf lpf;
+  ma_result ma_res;
+  ma_device ma_dev;
+  ma_device_config ma_conf;
+  Result res;
 };
-
-void init(ma_uint32 frame_count, ma_uint32 srate, double cutoff);
-void deinit();
-const frames_t *get_buffer();
-void setup_filter(double srate, double cutoff);
-bool is_buffer_new();
-
-} // namespace audio
 
 #endif // AUDIO_HPP

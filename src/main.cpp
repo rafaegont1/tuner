@@ -41,6 +41,8 @@ struct ImFilter : public App {
         constexpr double max_fc = 500.0;
         // static note_table_t notes(fs, N);
 
+        static Audio audio(N, fs, fc);
+
         static PitchDetector pitch_detect;
         PitchDetector::Result note_res;
 
@@ -60,10 +62,10 @@ struct ImFilter : public App {
 
         if (filter_need_update) {
             fc = std::clamp(fc, min_fc, max_fc);
-            audio::setup_filter(fs, fc);
+            audio.setup_filter(fs, fc);
         }
 
-        const audio::frames_t *frames = audio::get_buffer();
+        const Audio::Result *audio_res = audio.get_buffer();
 
         // static Autocorrelation autocorr(N, fs);
         // const float *res = autocorr.apply(frames->y);
@@ -84,8 +86,8 @@ struct ImFilter : public App {
             ImPlot::SetupAxesLimits(0, N, -1, 1);
 
             ImPlot::SetupLegend(ImPlotLocation_NorthEast);
-            ImPlot::PlotLine("Input Signal", frames->x, N);
-            ImPlot::PlotLine("Filtered Signal", frames->y, N);
+            ImPlot::PlotLine("Input Signal", audio_res->raw.data(), N);
+            ImPlot::PlotLine("Filtered Signal", audio_res->flt.data(), N);
             // ImPlot::PlotLine("Autocorrelation", res, N);
             ImPlot::EndPlot();
         }
@@ -134,7 +136,7 @@ struct ImFilter : public App {
             etfe_need_update = false;
         }
 
-        auto& fft_res = etfe.estimate(frames->y);
+        auto& fft_res = etfe.estimate(audio_res->flt.data());
         note_res = pitch_detect.find(fft_res.f[fft_res.pidx], fft_res.df);
 
         if (ImGui::BeginTable("table", 4)) {
@@ -196,10 +198,8 @@ struct ImFilter : public App {
 
 int main(int argc, char const *argv[])
 {
-    audio::init(N, fs, fc);
     ImFilter app("ImFilter",960,540,argc,argv);
     app.Run();
-    audio::deinit();
 
     return 0;
 }
