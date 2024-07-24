@@ -182,7 +182,7 @@ struct ImFilter : public App {
             ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.25f);
             ImPlot::PlotShaded("x[f]", fft_res.f.data(), fft_res.ampy.data(), (int)fft_res.f.size(), -INFINITY);
             ImPlot::PlotLine("x[f]", fft_res.f.data(), fft_res.ampy.data(), (int)fft_res.f.size());
-            ImPlot::TagX(fft_res.f[fft_res.pidx], ImVec4(1,1,1,0.9), "%s", note_res.note);
+            ImPlot::TagX(fft_res.f[fft_res.pidx], ImVec4(1,1,1,0.9), "%d%s - %.1f cents", note_res.octave, note_res.note, note_res.cents);
             if (ImPlot::DragLineX(397391, &fc, ImVec4(.15f, .15f, .15f, 1))) {
                 filter_need_update = true;
             }
