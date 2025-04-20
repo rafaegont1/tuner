@@ -2,8 +2,6 @@
 #include "imgui.h"
 #include "implot.h"
 #include "audio.hpp"
-#include "PitchDetector.hpp"
-#include "ETFE.hpp"
 
 // Buffer size and sample rate
 static const int N = 8'192;
@@ -14,37 +12,28 @@ static double fc = 350.0;
 
 namespace ImGui {
 
-bool SliderDouble(const char *label, double *v, double v_min, double v_max, const char *format = NULL, ImGuiSliderFlags flags = 0)
-{
+static inline bool SliderDouble(const char *label, double *v, double v_min, double v_max, const char *format = NULL, ImGuiSliderFlags flags = 0) {
     return SliderScalar(label, ImGuiDataType_Double, v, &v_min, &v_max, format, flags);
 }
 
-bool SliderInt32(const char *label, int *v, int v_min, int v_max, const char *format = NULL, ImGuiSliderFlags flags = 0)
-{
+static inline bool SliderInt32(const char *label, int *v, int v_min, int v_max, const char *format = NULL, ImGuiSliderFlags flags = 0) {
     return SliderScalar(label, ImGuiDataType_S32, v, &v_min, &v_max, format, flags);
 }
 
-float GetWindowContentRegionWidth()
-{
+static inline float GetWindowContentRegionWidth() {
     return GetWindowContentRegionMax().x - GetWindowContentRegionMin().x;
 }
 
 } // namespace ImGui
 
-struct ImFilter : public App {
-
+struct Tuner : public App {
     using App::App;
 
-    void Update() override
-    {
+    void Update() override {
         constexpr double min_fc = 5.0;
         constexpr double max_fc = 500.0;
-        // static note_table_t notes(fs, N);
 
         static Audio audio(N, fs, fc);
-
-        static PitchDetector pitch_detect;
-        PitchDetector::Result note_res;
 
         // gui inputs
         static bool etfe_need_update = true;
@@ -65,20 +54,7 @@ struct ImFilter : public App {
             audio.setup_filter(fs, fc);
         }
 
-        const Audio::Result *audio_res = audio.get_buffer();
-
-        // static Autocorrelation autocorr(N, fs);
-        // const float *res = autocorr.apply(frames->y);
-        // float freq = autocorr.get_freq();
-        // note_res = pitch_detect.find(freq, 0.5);
-
-        // ImGui::Text("Frequency: %.2f", freq);
-        // ImGui::Text("Note: %s | %.2f", note_res.nearest_note->name, note_res.nearest_note->pitch);
-        // if (note_res.in_tune) {
-        //     ImGui::Text("In tune!");
-        // } else {
-        //     ImGui::Text("Cents sharp: %.2f", note_res.cents_sharp);
-        // }
+        const Audio::Result& audio_res = audio.get_buffer();
 
         // plot waveforms
         if (ImPlot::BeginPlot("##Filter", ImVec2(-1, -1))) {
@@ -86,9 +62,8 @@ struct ImFilter : public App {
             ImPlot::SetupAxesLimits(0, N, -1, 1);
 
             ImPlot::SetupLegend(ImPlotLocation_NorthEast);
-            ImPlot::PlotLine("Input Signal", audio_res->raw.data(), N);
-            ImPlot::PlotLine("Filtered Signal", audio_res->flt.data(), N);
-            // ImPlot::PlotLine("Autocorrelation", res, N);
+            ImPlot::PlotLine("Input Signal", audio_res.raw.data(), N);
+            ImPlot::PlotLine("Filtered Signal", audio_res.flt.data(), N);
             ImPlot::EndPlot();
         }
         ImGui::EndChild(); // ChildL
@@ -102,8 +77,6 @@ struct ImFilter : public App {
         static int infft          = 6;
         static int nfft_opts[]    = {100, 200, 500, 1'000, 2'000, 5'000, 10'000, 20'000, 50'000};
         static float overlap      = 0.5f;
-
-        static etfe::ETFE etfe(N, fs, etfe::hamming(nwindow_opts[inwindow]), nwindow_opts[inwindow] / 2, nfft_opts[infft]);
 
         ImGui::Text("Frequency Response");
         ImGui::Separator();
@@ -126,7 +99,7 @@ struct ImFilter : public App {
             int nwindow  = nwindow_opts[inwindow];
             int noverlap = (int)(nwindow * overlap);
             int nfft     = nfft_opts[infft];
-            etfe.setup(
+            audio.setup_etfe(
                 N, fs,
                 window == 0 ? etfe::hamming(nwindow)
                     : window == 1 ? etfe::hann(nwindow)
@@ -135,9 +108,6 @@ struct ImFilter : public App {
             );
             etfe_need_update = false;
         }
-
-        auto& fft_res = etfe.estimate(audio_res->flt.data());
-        note_res = pitch_detect.find(fft_res.f[fft_res.pidx], fft_res.df);
 
         if (ImGui::BeginTable("table", 4)) {
             ImGui::TableNextRow();
@@ -151,27 +121,27 @@ struct ImFilter : public App {
             ImGui::Text("Accuracy");
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
-            ImGui::Text("%.2f", fft_res.f[fft_res.pidx]);
+            ImGui::Text("%.2f", audio_res.etfe.f[audio_res.etfe.pidx]);
             ImGui::TableNextColumn();
-            ImGui::Text("%.2f", note_res.f);
+            ImGui::Text("%.2f", audio_res.pd.f);
             ImGui::TableNextColumn();
-            ImGui::Text("%d%s", note_res.octave, note_res.note);
+            ImGui::Text("%d%s", audio_res.pd.octave, audio_res.pd.note);
             ImGui::TableNextColumn();
-            ImGui::Text("%.2f", fft_res.df);
+            ImGui::Text("%.2f", audio_res.etfe.df);
             ImGui::EndTable();
         }
-        if (note_res.in_tune) {
+        if (audio_res.pd.in_tune) {
             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0,255,0,255));
             ImGui::Text("In tune!");
             ImGui::PopStyleColor();
         } else {
-            if (note_res.cents > 0) {
+            if (audio_res.pd.cents > 0) {
                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255,0,0,255));
-                ImGui::Text("Cents sharp: %.2f", note_res.cents);
+                ImGui::Text("Cents sharp: %.2f", audio_res.pd.cents);
                 ImGui::PopStyleColor();
             } else {
                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255,0,0,255));
-                ImGui::Text("Cents flat: %.2f", -note_res.cents);
+                ImGui::Text("Cents flat: %.2f", -audio_res.pd.cents);
                 ImGui::PopStyleColor();
             }
         }
@@ -182,9 +152,9 @@ struct ImFilter : public App {
             ImPlot::SetupAxes("Frequency [Hz]", "Amplitude [dB]");
             ImPlot::SetupLegend(ImPlotLocation_NorthEast);
             ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.25f);
-            ImPlot::PlotShaded("x[f]", fft_res.f.data(), fft_res.ampy.data(), (int)fft_res.f.size(), -INFINITY);
-            ImPlot::PlotLine("x[f]", fft_res.f.data(), fft_res.ampy.data(), (int)fft_res.f.size());
-            ImPlot::TagX(fft_res.f[fft_res.pidx], ImVec4(1,1,1,0.9), "%d%s - %.1f cents", note_res.octave, note_res.note, note_res.cents);
+            ImPlot::PlotShaded("x[f]", audio_res.etfe.f.data(), audio_res.etfe.ampy.data(), (int)audio_res.etfe.f.size(), -INFINITY);
+            ImPlot::PlotLine("x[f]", audio_res.etfe.f.data(), audio_res.etfe.ampy.data(), (int)audio_res.etfe.f.size());
+            ImPlot::TagX(audio_res.etfe.f[audio_res.etfe.pidx], ImVec4(1,1,1,0.9), "%d%s: %.1f cents", audio_res.pd.octave, audio_res.pd.note, audio_res.pd.cents);
             if (ImPlot::DragLineX(397391, &fc, ImVec4(.15f, .15f, .15f, 1))) {
                 filter_need_update = true;
             }
@@ -196,9 +166,8 @@ struct ImFilter : public App {
     }
 };
 
-int main(int argc, char const *argv[])
-{
-    ImFilter app("ImFilter",960,540,argc,argv);
+int main(int argc, char const *argv[]) {
+    Tuner app("ImFilter", 960, 540, argc, argv);
     app.Run();
 
     return 0;
